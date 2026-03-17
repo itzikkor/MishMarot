@@ -1,7 +1,8 @@
 {
   "expo": {
     "name": "MishMarot",
-    "slug": "MishMarot",
+    "slug": "mishmarot",
+    "scheme": "mishmarot",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,19 +13,37 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mishmarot.app"
     },
     "android": {
+      "package": "com.mishmarot.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#1A56DB",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": []
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#1A56DB"
+        }
+      ]
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      }
     }
   }
 }
