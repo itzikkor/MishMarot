@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -22,6 +22,7 @@ export default function ScheduleScreen() {
   const [currentMember, setCurrentMember] = useState<Member | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [bootstrapping, setBootstrapping] = useState(true);
+  const [locking, setLocking] = useState(false);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async user => {
@@ -42,25 +43,34 @@ export default function ScheduleScreen() {
 
   const {
     schedule, isLoading, weekDates, startDate,
-    goToPrevWeek, goToNextWeek, assign, remove, applyWeek,
+    goToPrevWeek, goToNextWeek, assign, remove, applyWeek, lockWeek,
   } = useSchedule(org?.id ?? null);
 
   if (bootstrapping || isLoading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
-    );
+    return <View style={styles.center}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
   }
 
   const shiftSlots: ShiftSlot[] = org?.settings.shiftSlots ?? [];
+  const isLocked = schedule?.isLocked ?? false;
 
-  const startFormatted = new Date(startDate).toLocaleDateString('he-IL', {
-    day: 'numeric', month: 'long',
-  });
+  const startFormatted = new Date(startDate).toLocaleDateString('he-IL', { day: 'numeric', month: 'long' });
   const endDate = new Date(startDate);
   endDate.setDate(endDate.getDate() + 6);
   const endFormatted = endDate.toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  const handleLockToggle = () => {
+    if (isLocked) {
+      Alert.alert('פתיחת משמרות', 'האם לאפשר שינויים שוב?', [
+        { text: 'ביטול', style: 'cancel' },
+        { text: 'פתח', onPress: async () => { setLocking(true); await lockWeek(false); setLocking(false); } },
+      ]);
+    } else {
+      Alert.alert('אישור משמרות', 'לאחר האישור, העובדים לא יוכלו לשנות משמרות.', [
+        { text: 'ביטול', style: 'cancel' },
+        { text: 'אשר', onPress: async () => { setLocking(true); await lockWeek(true); setLocking(false); } },
+      ]);
+    }
+  };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -73,9 +83,7 @@ export default function ScheduleScreen() {
           <TouchableOpacity onPress={goToPrevWeek} style={styles.navBtn}>
             <Text style={styles.navArrow}>‹</Text>
           </TouchableOpacity>
-          <View style={styles.weekInfo}>
-            <Text style={styles.weekRange}>{startFormatted} – {endFormatted}</Text>
-          </View>
+          <Text style={styles.weekRange}>{startFormatted} – {endFormatted}</Text>
           <TouchableOpacity onPress={goToNextWeek} style={styles.navBtn}>
             <Text style={styles.navArrow}>›</Text>
           </TouchableOpacity>
@@ -85,6 +93,13 @@ export default function ScheduleScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Lock status banner */}
+      {isLocked && (
+        <View style={styles.lockedBanner}>
+          <Text style={styles.lockedText}>🔒 המשמרות אושרו</Text>
+        </View>
+      )}
+
       {/* Grid */}
       <View style={styles.gridContainer}>
         <WeekGrid
@@ -93,11 +108,30 @@ export default function ScheduleScreen() {
           shiftSlots={shiftSlots}
           members={members}
           isAdmin={isAdmin}
+          isLocked={isLocked}
           currentMemberId={currentMember?.id}
           onAssign={assign}
           onRemove={remove}
           onApplyWeek={applyWeek}
         />
+      </View>
+
+      {/* Bottom bar */}
+      <View style={styles.bottomBar}>
+        <TouchableOpacity style={styles.historyBtn} onPress={() => router.push('/history')}>
+          <Text style={styles.historyBtnText}>📋 היסטוריית משמרות</Text>
+        </TouchableOpacity>
+        {isAdmin && (
+          <TouchableOpacity
+            style={[styles.lockBtn, isLocked && styles.unlockBtn]}
+            onPress={handleLockToggle}
+            disabled={locking}
+          >
+            <Text style={styles.lockBtnText}>
+              {locking ? '...' : isLocked ? '🔓 פתח משמרות' : '✅ אישור משמרות'}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -109,14 +143,33 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingVertical: 12,
-    backgroundColor: COLORS.surface,
-    borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border,
   },
   headerAction: { fontSize: 22, padding: 4 },
-  weekNav: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  weekNav: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   navBtn: { padding: 8 },
   navArrow: { fontSize: 24, color: COLORS.primary, fontWeight: '700' },
-  weekInfo: { alignItems: 'center' },
   weekRange: { fontSize: 13, fontWeight: '600', color: COLORS.textPrimary },
+  lockedBanner: {
+    backgroundColor: '#FEF3C7', paddingVertical: 6, paddingHorizontal: 16,
+    borderBottomWidth: 1, borderBottomColor: '#FDE68A',
+  },
+  lockedText: { fontSize: 13, color: '#92400E', fontWeight: '600', textAlign: 'center' },
   gridContainer: { flex: 1, padding: 8 },
+  bottomBar: {
+    flexDirection: 'row', gap: 8, padding: 12,
+    backgroundColor: COLORS.surface, borderTopWidth: 1, borderTopColor: COLORS.border,
+  },
+  historyBtn: {
+    flex: 1, paddingVertical: 12, borderRadius: 10,
+    backgroundColor: COLORS.background, borderWidth: 1, borderColor: COLORS.border,
+    alignItems: 'center',
+  },
+  historyBtnText: { fontSize: 13, color: COLORS.textPrimary, fontWeight: '600' },
+  lockBtn: {
+    flex: 1, paddingVertical: 12, borderRadius: 10,
+    backgroundColor: COLORS.primary, alignItems: 'center',
+  },
+  unlockBtn: { backgroundColor: COLORS.warning ?? '#D97706' },
+  lockBtnText: { fontSize: 13, color: '#fff', fontWeight: '700' },
 });

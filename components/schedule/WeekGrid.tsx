@@ -14,6 +14,7 @@ interface Props {
   shiftSlots: ShiftSlot[];
   members: Member[];
   isAdmin: boolean;
+  isLocked: boolean;
   currentMemberId?: string;
   onAssign: (date: string, slotId: string, memberId: string) => void;
   onRemove: (date: string, slotId: string, memberId: string) => void;
@@ -24,7 +25,7 @@ interface SelectedCell { date: string; slotId: string; slotLabel: string }
 
 export function WeekGrid({
   weekDates, days, shiftSlots, members,
-  isAdmin, currentMemberId, onAssign, onRemove, onApplyWeek,
+  isAdmin, isLocked, currentMemberId, onAssign, onRemove, onApplyWeek,
 }: Props) {
   const [selected, setSelected] = useState<SelectedCell | null>(null);
 
@@ -85,12 +86,13 @@ export function WeekGrid({
               </View>
               {reversedDates.map(date => {
                 const memberIds = days[date]?.[slot.id] ?? [];
+                const canEdit = isAdmin || !isLocked;
                 return (
                   <ShiftCell
                     key={date}
                     memberIds={memberIds}
                     members={members}
-                    canEdit={isAdmin || true}
+                    canEdit={canEdit}
                     onPress={() => setSelected({ date, slotId: slot.id, slotLabel: slot.label })}
                   />
                 );

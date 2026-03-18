@@ -5,6 +5,7 @@ import {
   assignShift,
   removeShift,
   applyToFullWeek,
+  setWeekLocked,
   getWeekId,
   getWeekStartDate,
   getWeekDates,
@@ -66,6 +67,11 @@ export function useSchedule(orgId: string | null) {
     await applyToFullWeek(orgId, weekId, slotId, memberIds, weekDates);
   }, [orgId, weekId, weekDates]);
 
+  const lockWeek = useCallback(async (locked: boolean) => {
+    if (!orgId) return;
+    await setWeekLocked(orgId, weekId, locked);
+  }, [orgId, weekId]);
+
   return {
     schedule,
     isLoading,
@@ -78,5 +84,6 @@ export function useSchedule(orgId: string | null) {
     assign,
     remove,
     applyWeek,
+    lockWeek,
   };
 }

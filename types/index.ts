@@ -34,6 +34,7 @@ export interface WeekSchedule {
   weekId: string;     // "2026-W12"
   startDate: string;  // Sunday YYYY-MM-DD
   days: WeekDays;
+  isLocked?: boolean;
 }
 
 export const DEFAULT_SHIFT_SLOTS: ShiftSlot[] = [

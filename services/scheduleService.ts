@@ -112,6 +112,14 @@ export async function applyToFullWeek(
   await updateDoc(ref, updates);
 }
 
+export async function setWeekLocked(
+  orgId: string,
+  weekId: string,
+  isLocked: boolean,
+): Promise<void> {
+  await updateDoc(scheduleDocRef(orgId, weekId), { isLocked });
+}
+
 export function subscribeWeekSchedule(
   orgId: string,
   weekId: string,
