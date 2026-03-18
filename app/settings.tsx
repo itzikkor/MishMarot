@@ -68,6 +68,8 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>שם ארגון</Text>
           <Text style={styles.orgName}>{org?.name}</Text>
+          <Text style={styles.sectionHeader}>קוד ארגון (שתף עם עובדים)</Text>
+          <Text style={styles.orgCode} selectable>{org?.id}</Text>
         </View>
 
         <View style={styles.section}>
@@ -113,7 +115,12 @@ const styles = StyleSheet.create({
     elevation: 1, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4,
   },
   sectionHeader: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary, marginBottom: 4 },
-  orgName: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary },
+  orgName: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 12 },
+  orgCode: {
+    fontSize: 12, color: COLORS.textSecondary, fontFamily: 'monospace',
+    backgroundColor: COLORS.background, padding: 8, borderRadius: 6,
+    borderWidth: 1, borderColor: COLORS.border, marginTop: 2,
+  },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   rowLabel: { fontSize: 15, color: COLORS.textPrimary },
   saveBtn: {},

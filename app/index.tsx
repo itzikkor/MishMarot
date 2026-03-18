@@ -27,13 +27,17 @@ export default function IndexScreen() {
       }
 
       // Look up org via fast top-level document
-      const orgId = await getUserOrgId(user.uid);
-      if (orgId) {
-        await AsyncStorage.setItem(ORG_ID_KEY, orgId);
-        router.replace('/schedule');
-      } else {
-        // No org found — new admin creating an org
-        router.replace('/setup');
+      try {
+        const orgId = await getUserOrgId(user.uid);
+        if (orgId) {
+          await AsyncStorage.setItem(ORG_ID_KEY, orgId);
+          router.replace('/schedule');
+        } else {
+          // No org found — could be new admin or member whose record wasn't synced
+          router.replace('/join-org');
+        }
+      } catch {
+        router.replace('/join-org');
       }
     });
     return unsub;
