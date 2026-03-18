@@ -35,7 +35,8 @@ export default function ScheduleScreen() {
       setOrg(o);
       setMembers(ms);
       setCurrentMember(me);
-      setIsAdmin(o.adminUid === user.uid);
+      const memberRecord = ms.find(m => m.id === user.uid);
+      setIsAdmin(o.adminUid === user.uid || memberRecord?.role === 'admin');
       setBootstrapping(false);
     });
     return unsub;
