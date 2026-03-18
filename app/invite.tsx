@@ -1,20 +1,18 @@
 import { useState, useEffect } from 'react';
 import {
-  View, Text, TextInput, StyleSheet, Alert, Share, KeyboardAvoidingView, Platform, TouchableOpacity,
+  View, Text, TextInput, StyleSheet, Alert,
+  KeyboardAvoidingView, Platform, TouchableOpacity, ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createInvite, buildInviteLink } from '../services/inviteService';
+import { createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { secondaryAuth } from '../services/firebase';
 import { addMember } from '../services/memberService';
 import { COLORS } from '../constants/colors';
 import { Button } from '../components/ui/Button';
 
 const ORG_ID_KEY = 'mishmarot:orgId';
-
-function generateId() {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
 
 export default function InviteScreen() {
   const insets = useSafeAreaInsets();
@@ -22,34 +20,50 @@ export default function InviteScreen() {
   const [orgId, setOrgId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem(ORG_ID_KEY).then(setOrgId);
   }, []);
 
-  const handleInvite = async () => {
-    if (!name.trim() || !email.trim()) {
-      Alert.alert('שגיאה', 'נא למלא שם ואימייל');
+  const handleAdd = async () => {
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      Alert.alert('שגיאה', 'נא למלא שם, אימייל וסיסמה');
+      return;
+    }
+    if (password.length < 6) {
+      Alert.alert('שגיאה', 'הסיסמה חייבת להכיל לפחות 6 תווים');
       return;
     }
     if (!orgId) return;
+
     setLoading(true);
     try {
-      const memberId = generateId();
-      // Pre-create member record (no UID yet — will be updated on join)
-      await addMember(orgId, { id: memberId, name: name.trim(), email: email.trim(), role: 'member' });
-      const token = await createInvite(orgId, name.trim(), email.trim(), memberId);
-      const link = buildInviteLink(token);
+      // Create Firebase Auth account using secondary app — admin stays logged in
+      const credential = await createUserWithEmailAndPassword(secondaryAuth, email.trim(), password);
+      const uid = credential.user.uid;
 
-      await Share.share({
-        message: `הי ${name.trim()},\nהוזמנת ל-MishMarot!\n\nלחץ כאן להצטרפות:\n${link}`,
-        title: 'הזמנה ל-MishMarot',
+      // Sign out from secondary app immediately
+      await signOut(secondaryAuth);
+
+      // Add member to org in Firestore using the new UID
+      await addMember(orgId, {
+        id: uid,
+        name: name.trim(),
+        email: email.trim(),
+        role: 'member',
       });
+
+      Alert.alert('נוסף בהצלחה', `${name.trim()} נוסף לצוות.\n\nפרטי כניסה:\nאימייל: ${email.trim()}\nסיסמה: ${password}`);
       setName('');
       setEmail('');
+      setPassword('');
     } catch (e: any) {
-      Alert.alert('שגיאה', e.message ?? 'יצירת הזמנה נכשלה');
+      const msg = e.code === 'auth/email-already-in-use'
+        ? 'אימייל זה כבר רשום במערכת'
+        : e.message ?? 'הוספת משתמש נכשלה';
+      Alert.alert('שגיאה', msg);
     } finally {
       setLoading(false);
     }
@@ -64,11 +78,15 @@ export default function InviteScreen() {
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={styles.back}>← חזור</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>הזמנת עובד</Text>
+        <Text style={styles.title}>הוספת עובד</Text>
         <View style={{ width: 60 }} />
       </View>
 
-      <View style={styles.form}>
+      <ScrollView contentContainerStyle={styles.form}>
+        <Text style={styles.hint}>
+          הכנס את פרטי העובד. הוא יוכל להיכנס לאפליקציה עם האימייל והסיסמה שתגדיר כאן.
+        </Text>
+
         <Text style={styles.label}>שם עובד</Text>
         <TextInput
           style={styles.input}
@@ -89,12 +107,17 @@ export default function InviteScreen() {
           placeholderTextColor={COLORS.textSecondary}
         />
 
-        <Text style={styles.hint}>
-          יישלח קישור הזמנה לשיתוף — העובד ילחץ עליו ויצטרף לצוות.
-        </Text>
+        <Text style={styles.label}>סיסמה (לפחות 6 תווים)</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="סיסמה זמנית"
+          value={password}
+          onChangeText={setPassword}
+          placeholderTextColor={COLORS.textSecondary}
+        />
 
-        <Button label="שלח הזמנה" onPress={handleInvite} loading={loading} style={styles.btn} />
-      </View>
+        <Button label="הוסף עובד" onPress={handleAdd} loading={loading} style={styles.btn} />
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -109,12 +132,16 @@ const styles = StyleSheet.create({
   back: { fontSize: 15, color: COLORS.primary, width: 60 },
   title: { fontSize: 18, fontWeight: '700', color: COLORS.textPrimary },
   form: { padding: 24 },
+  hint: {
+    fontSize: 13, color: COLORS.textSecondary, textAlign: 'right',
+    marginBottom: 24, lineHeight: 20,
+    backgroundColor: COLORS.primaryLight, padding: 12, borderRadius: 8,
+  },
   label: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary, marginBottom: 6, textAlign: 'right' },
   input: {
     borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, padding: 14,
     fontSize: 15, color: COLORS.textPrimary, marginBottom: 16,
     backgroundColor: COLORS.surface, textAlign: 'right',
   },
-  hint: { fontSize: 13, color: COLORS.textSecondary, textAlign: 'right', marginBottom: 24, lineHeight: 20 },
   btn: {},
 });

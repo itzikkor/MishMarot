@@ -5,6 +5,7 @@ import { ShiftSlot, Member, WeekDays } from '../../types';
 import { ShiftCell } from './ShiftCell';
 import { AssignModal } from './AssignModal';
 
+// Sun=א׳ ... Sat=ש׳, displayed right-to-left
 const DAY_LABELS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
 
 interface Props {
@@ -47,17 +48,23 @@ export function WeekGrid({
     onApplyWeek(selected.slotId, ids);
   };
 
+  // Reverse for RTL display (Sat on left → Sun on right)
+  const reversedDates = [...weekDates].reverse();
+
   return (
     <>
       <View style={styles.container}>
-        {/* Day headers */}
+        {/* Day headers — right to left */}
         <View style={styles.headerRow}>
           <View style={styles.slotLabelCol} />
-          {weekDates.map((date, i) => {
+          {reversedDates.map((date, i) => {
+            const originalIndex = 6 - i;
             const isToday = date === new Date().toISOString().split('T')[0];
             return (
               <View key={date} style={[styles.dayHeader, isToday && styles.todayHeader]}>
-                <Text style={[styles.dayLabel, isToday && styles.todayLabel]}>{DAY_LABELS[i]}</Text>
+                <Text style={[styles.dayLabel, isToday && styles.todayLabel]}>
+                  {DAY_LABELS[originalIndex]}
+                </Text>
                 <Text style={[styles.dayDate, isToday && styles.todayLabel]}>
                   {new Date(date).getDate()}
                 </Text>
@@ -76,15 +83,14 @@ export function WeekGrid({
                 <Text style={styles.slotLabelText} numberOfLines={1}>{slot.label}</Text>
                 <Text style={styles.slotTime}>{slot.startTime}</Text>
               </View>
-              {weekDates.map(date => {
+              {reversedDates.map(date => {
                 const memberIds = days[date]?.[slot.id] ?? [];
-                const canEdit = isAdmin || true;
                 return (
                   <ShiftCell
                     key={date}
                     memberIds={memberIds}
                     members={members}
-                    canEdit={canEdit}
+                    canEdit={isAdmin || true}
                     onPress={() => setSelected({ date, slotId: slot.id, slotLabel: slot.label })}
                   />
                 );
@@ -112,7 +118,7 @@ export function WeekGrid({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: {},
   headerRow: { flexDirection: 'row', marginBottom: 4 },
   slotLabelCol: { width: 44, justifyContent: 'center', alignItems: 'center' },
   dayHeader: {
@@ -123,7 +129,7 @@ const styles = StyleSheet.create({
   dayLabel: { fontSize: 10, fontWeight: '600', color: COLORS.textSecondary },
   dayDate: { fontSize: 13, fontWeight: '700', color: COLORS.textPrimary },
   todayLabel: { color: '#fff' },
-  row: { flexDirection: 'row', flex: 1, marginBottom: 2 },
+  row: { flexDirection: 'row', marginBottom: 2 },
   slotLabelText: { fontSize: 11, fontWeight: '700', color: COLORS.textPrimary },
   slotTime: { fontSize: 9, color: COLORS.textSecondary },
 });

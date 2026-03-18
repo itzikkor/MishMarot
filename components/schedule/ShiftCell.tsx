@@ -37,7 +37,7 @@ export function ShiftCell({ memberIds, members, onPress, canEdit }: Props) {
 const styles = StyleSheet.create({
   cell: {
     flex: 1,
-    minHeight: 44,
+    minHeight: 32,
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 5,

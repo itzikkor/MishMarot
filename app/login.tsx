@@ -1,12 +1,9 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, StyleSheet, KeyboardAvoidingView,
-  Platform, Alert, TouchableOpacity,
+  Platform, Alert,
 } from 'react-native';
-import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-} from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { useRouter } from 'expo-router';
 import { auth } from '../services/firebase';
 import { COLORS } from '../constants/colors';
@@ -16,8 +13,8 @@ export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isRegister, setIsRegister] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isNewAdmin, setIsNewAdmin] = useState(false);
 
   const handleSubmit = async () => {
     if (!email.trim() || !password.trim()) {
@@ -26,14 +23,19 @@ export default function LoginScreen() {
     }
     setLoading(true);
     try {
-      if (isRegister) {
+      if (isNewAdmin) {
         await createUserWithEmailAndPassword(auth, email.trim(), password);
       } else {
         await signInWithEmailAndPassword(auth, email.trim(), password);
       }
       router.replace('/');
     } catch (e: any) {
-      Alert.alert('שגיאה', e.message ?? 'התחברות נכשלה');
+      const msg = e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password'
+        ? 'אימייל או סיסמה שגויים'
+        : e.code === 'auth/user-not-found'
+        ? 'משתמש לא נמצא'
+        : e.message ?? 'התחברות נכשלה';
+      Alert.alert('שגיאה', msg);
     } finally {
       setLoading(false);
     }
@@ -65,17 +67,18 @@ export default function LoginScreen() {
         />
 
         <Button
-          label={isRegister ? 'הרשמה' : 'כניסה'}
+          label={isNewAdmin ? 'צור חשבון מנהל' : 'כניסה'}
           onPress={handleSubmit}
           loading={loading}
           style={styles.btn}
         />
 
-        <TouchableOpacity onPress={() => setIsRegister(r => !r)} style={styles.toggle}>
-          <Text style={styles.toggleText}>
-            {isRegister ? 'כבר יש לי חשבון — כניסה' : 'אין לי חשבון — הרשמה'}
-          </Text>
-        </TouchableOpacity>
+        <Button
+          label={isNewAdmin ? 'כבר יש לי חשבון' : 'מנהל חדש? צור ארגון'}
+          onPress={() => setIsNewAdmin(v => !v)}
+          variant="ghost"
+          style={styles.toggle}
+        />
       </View>
     </KeyboardAvoidingView>
   );
@@ -93,6 +96,5 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background, textAlign: 'right',
   },
   btn: { marginTop: 8 },
-  toggle: { marginTop: 18, alignItems: 'center' },
-  toggleText: { color: COLORS.primary, fontSize: 13 },
+  toggle: { marginTop: 4 },
 });

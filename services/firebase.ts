@@ -11,8 +11,14 @@ const firebaseConfig = {
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
 
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+// Primary app — used by the logged-in admin/member
+const app = getApps().find(a => a.name === '[DEFAULT]') ?? initializeApp(firebaseConfig);
+
+// Secondary app — used only to create new user accounts without signing out the admin
+export const secondaryApp =
+  getApps().find(a => a.name === 'secondary') ?? initializeApp(firebaseConfig, 'secondary');
 
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+export const secondaryAuth = getAuth(secondaryApp);
 export default app;
