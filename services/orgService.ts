@@ -17,6 +17,9 @@ export async function createOrganization(name: string, adminUid: string): Promis
     createdAt: serverTimestamp(),
   });
 
+  // Register admin in fast lookup so they can find their org on login
+  await setDoc(doc(db, 'userOrgs', adminUid), { orgId: orgRef.id });
+
   return { id: orgRef.id, name, adminUid, settings };
 }
 
