@@ -117,7 +117,7 @@ export default function ScheduleScreen() {
       </View>
 
       {/* Bottom bar */}
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 12 }]}>
         <TouchableOpacity style={styles.historyBtn} onPress={() => router.push('/history')}>
           <Text style={styles.historyBtnText}>📋 היסטוריית משמרות</Text>
         </TouchableOpacity>
@@ -159,6 +159,7 @@ const styles = StyleSheet.create({
   bottomBar: {
     flexDirection: 'row', gap: 8, padding: 12,
     backgroundColor: COLORS.surface, borderTopWidth: 1, borderTopColor: COLORS.border,
+    paddingBottom: 12,
   },
   historyBtn: {
     flex: 1, paddingVertical: 12, borderRadius: 10,
