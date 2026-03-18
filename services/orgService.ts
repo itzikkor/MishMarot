@@ -40,3 +40,7 @@ export async function updateNotificationsEnabled(orgId: string, enabled: boolean
     'settings.notificationsEnabled': enabled,
   });
 }
+
+export async function updateOrgPhoto(orgId: string, photoUrl: string): Promise<void> {
+  await updateDoc(doc(db, 'organizations', orgId), { photoUrl });
+}

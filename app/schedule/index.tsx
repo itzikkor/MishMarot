@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Alert, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -137,6 +137,11 @@ export default function ScheduleScreen() {
         />
       </View>
 
+      {/* Org photo */}
+      {org?.photoUrl && (
+        <Image source={{ uri: org.photoUrl }} style={styles.orgPhoto} resizeMode="cover" />
+      )}
+
       {/* Bottom bar */}
       <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 12 }]}>
         <TouchableOpacity style={styles.historyBtn} onPress={() => router.push('/history')}>
@@ -179,6 +184,7 @@ const styles = StyleSheet.create({
   },
   lockedText: { fontSize: 13, color: '#92400E', fontWeight: '600', textAlign: 'center' },
   gridContainer: { flex: 1, padding: 8 },
+  orgPhoto: { width: '100%', height: 160, marginBottom: 0 },
   bottomBar: {
     flexDirection: 'row', gap: 8, padding: 12,
     backgroundColor: COLORS.surface, borderTopWidth: 1, borderTopColor: COLORS.border,

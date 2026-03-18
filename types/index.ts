@@ -24,6 +24,7 @@ export interface Organization {
   name: string;
   adminUid: string;
   settings: OrgSettings;
+  photoUrl?: string;
 }
 
 // days keyed by YYYY-MM-DD, slots keyed by slotId → array of memberIds
