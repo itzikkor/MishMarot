@@ -3,7 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '../../services/firebase';
 import { getOrganization } from '../../services/orgService';
 import { getMembers } from '../../services/memberService';
@@ -58,6 +58,19 @@ export default function ScheduleScreen() {
   endDate.setDate(endDate.getDate() + 6);
   const endFormatted = endDate.toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' });
 
+  const handleLogout = () => {
+    Alert.alert('יציאה', 'האם להתנתק?', [
+      { text: 'ביטול', style: 'cancel' },
+      {
+        text: 'התנתק', style: 'destructive', onPress: async () => {
+          await AsyncStorage.removeItem(ORG_ID_KEY);
+          await signOut(auth);
+          router.replace('/login');
+        },
+      },
+    ]);
+  };
+
   const handleLockToggle = () => {
     if (isLocked) {
       Alert.alert('פתיחת משמרות', 'האם לאפשר שינויים שוב?', [
@@ -88,9 +101,16 @@ export default function ScheduleScreen() {
             <Text style={styles.navArrow}>›</Text>
           </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={() => router.push('/settings')} disabled={!isAdmin}>
-          <Text style={styles.headerAction}>{isAdmin ? '⚙️' : '  '}</Text>
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          {isAdmin && (
+            <TouchableOpacity onPress={() => router.push('/settings')}>
+              <Text style={styles.headerAction}>⚙️</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity onPress={handleLogout}>
+            <Text style={styles.logoutBtn}>יציאה</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Lock status banner */}
@@ -150,6 +170,8 @@ const styles = StyleSheet.create({
   navBtn: { padding: 8 },
   navArrow: { fontSize: 24, color: COLORS.primary, fontWeight: '700' },
   weekRange: { fontSize: 13, fontWeight: '600', color: COLORS.textPrimary },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  logoutBtn: { fontSize: 13, color: COLORS.error, fontWeight: '600', padding: 4 },
   lockedBanner: {
     backgroundColor: '#FEF3C7', paddingVertical: 6, paddingHorizontal: 16,
     borderBottomWidth: 1, borderBottomColor: '#FDE68A',
